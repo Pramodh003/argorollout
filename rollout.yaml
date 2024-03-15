@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: blue-green-rollout
+  labels:
+    app: rollout-bluegreen
+  namespace: canary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rollout-bluegreen
+  template:
+    metadata:
+      labels:
+        app: rollout-bluegreen
+    spec:
+      imagePullSecrets:
+      - name: docker-sirpi 
+      containers:
+      - name: rollouts-demo
+        image: sirpi/hello-world:2.0.0
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 5000
+          protocol: TCP
+
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          failureThreshold: 1
+          periodSeconds: 10
+
+        startupProbe:
+          httpGet:
+            path: /
+            port: http
+          failureThreshold: 30
+          periodSeconds: 10
+
+  strategy:
+    blueGreen:
+      activeService: active-svc
+      previewService: preview-svc
+      autoPromotionEnabled: false
